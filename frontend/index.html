@@ -114,19 +114,36 @@
                 })
                 .catch(() => {
                     fetchWikiPage(query);
+                    
                 });
         }
 
         function fetchWikiPage(query) {
-            const wikiApiUrl = `https://zh.wikipedia.org/w/api.php?action=query&prop=revisions&titles=${encodeURIComponent(query)}&rvslots=*&rvprop=content&format=json&origin=*`;
-            fetch(wikiApiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    saveJsonFile(query, data);
-                    displayContent(data);
-                })
-                .catch(error => console.error('Error fetching Wikipedia API:', error));
-        }
+    const wikiApiUrl = `https://zh.wikipedia.org/w/api.php?action=query&prop=revisions&titles=${encodeURIComponent(query)}&rvslots=*&rvprop=content&format=json&origin=*`;
+    fetch(wikiApiUrl)
+        .then(response => response.json())
+        .then(data => {
+            saveJsonFile(query, data);
+            displayContent(data);
+
+            // 延迟一秒后检查文件是否存在
+            setTimeout(() => {
+                const fileUrl = `${query}.json`;
+                fetch(fileUrl, { method: 'HEAD' })
+                    .then(fileResponse => {
+                        if (!fileResponse.ok) {
+                            saveJsonFile(query, data);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking file existence:', error);
+                    });
+            }, 1000); // 延迟一秒 (1000 毫秒)
+        })
+        .catch(error => console.error('Error fetching Wikipedia API:', error));
+}
+
+
 
         function saveJsonFile(query, data) {
             const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -174,12 +191,18 @@
                     return convertForTemplateToHTML(content);
                 }) // 处理 for 模板     
                 .replace(/{{noteTA[\s\S]*?}}/g, '') // 移除 noteTA 模板
-                .replace(/{{(cite web|Cite web |cite web |cite news|Cite web|Cite book|Cite book |cite book|Cite journal|Cite journal |cite journal)\|(.*?)}}/g, (match,type, content) => {
+                .replace(/{{(cite web|Cite web |cite web |cite news|Cite web|Cite book|Cite book |cite book|Cite journal|Cite journal |cite journal)\|(.*?)}}/g, (match, type, content) => {
                     const ref = convertCiteToHTML(content);
                     references.push(ref);
                     // console.log("content:"+type);
                     return `<sup id="cite_ref-${refIndex}"><a href="#cite_note-${refIndex}">[${refIndex++}]</a></sup>`;
                 }) // 处理 cite web 模板
+                // .replace(/{{Wayback\|(.*?)}}/g, (match, content) => {
+                //     const ref = convertWaybackToHTML(content);
+                //     references.push(ref);
+                //     return `<sup id="cite_ref-${refIndex}"><a href="#cite_note-${refIndex}">[${refIndex++}]</a></sup>`;
+                // }) // 处理 Wayback 模板
+
                 // .replace(/{{原创研究？\|[\s\S]*?}}/g, '<span class="note">[原创研究？]</span>') // 处理 原创研究？ 模板
 
                 // .replace(/{{sfnp\|(.*?)}}/g, '<span class="reference">[需要引用]</span>') // 简单引用
@@ -301,6 +324,35 @@
                 if (archivedate) ref += ` on ${archivedate}`;
             }
             if (deadurl === 'no') ref += ' (original link is active)';
+
+            return ref;
+        }
+        function convertWaybackToHTML(content) {
+            const params = content.split('|').map(param => param.trim());
+            let url = '', title = '', accessdate = '', archivedate = '';
+
+            params.forEach(param => {
+                const [key, value] = param.split('=').map(item => item.trim());
+                switch (key) {
+                    case 'url':
+                        url = value;
+                        break;
+                    case 'title':
+                        title = value;
+                        break;
+                    case 'access-date':
+                        accessdate = value;
+                        break;
+                    case 'archive-date':
+                        archivedate = value;
+                        break;
+                }
+            });
+
+            let ref = '';
+            if (title) ref += `<a href="${url}">${title}</a>`;
+            if (archivedate) ref += ` (archived on ${archivedate})`;
+            if (accessdate) ref += `, accessed ${accessdate}`;
 
             return ref;
         }
