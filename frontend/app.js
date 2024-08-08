@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    fetch('api-result-DEMO.json')
+    fetch('api-result.json')
         .then(response => response.json())
         .then(data => {
             const content = data.query.pages["243421"].revisions[0].slots.main["*"];

@@ -1,15 +1,189 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wikipedia Viewer</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>维基百科查看器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f6f6f6;
+        }
+
+        #content {
+            max-width: 960px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #333;
+            margin-top: 20px;
+        }
+
+        p {
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        ul,
+        ol {
+            margin-bottom: 10px;
+            padding-left: 20px;
+        }
+
+        a {
+            color: #0645ad;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .infobox {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f9f9f9;
+            float: right;
+            width: 300px;
+            font-size: 0.9em;
+        }
+
+        .note {
+            border-left: 3px solid #f00;
+            padding-left: 10px;
+            background-color: #fef3f3;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+
+        .reference {
+            font-size: 0.8em;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        blockquote {
+            margin: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #ccc;
+            font-style: italic;
+        }
+    </style>
 </head>
+
 <body>
     <div id="content" class="wiki-content">
-        <!-- Wikipedia content will be inserted here -->
+        <!-- 维基百科内容将在此插入 -->
     </div>
-    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const query = params.get('q');
+        if (query) {
+            fetch(`${query}.json`)
+                .then(response => response.json())
+                .then(data => {
+                    const content = data.query.pages["243421"].revisions[0].slots.main["*"];
+                    const htmlContent = convertWikiTextToHTML(content);
+                    document.getElementById('content').innerHTML = htmlContent;
+                })
+                .catch(error => console.error('Error loading JSON:', error));
+        } else {
+            document.getElementById('content').innerHTML = '<p>请在 URL 中提供 ?q= 参数。</p>';
+        }
+    });
+
+        function convertWikiTextToHTML(wikiText) {
+            // 手动转换 WikiText 为 HTML
+            let html = wikiText
+                .replace(/'''(.*?)'''/g, '<strong>$1</strong>') // 加粗
+                .replace(/''(.*?)''/g, '<em>$1</em>') // 斜体
+                .replace(/^====(.*?)====$/gm, '<h4>$1</h4>')  // 三级标题
+                .replace(/^===(.*?)===$/gm, '<h3>$1</h3>')  // 三级标题
+                .replace(/^==(.*?)==$/gm, '<h2>$1</h2>')    // 二级标题
+                .replace(/^=(.*?)=$/gm, '<h1>$1</h1>')      // 一级标题
+                .replace(/\[\[(.*?)\|(.*?)\]\]/g, '<a href="index.html?q=$2">$2</a>') // 带别名的链接
+                .replace(/\[\[(.*?)\]\]/g, '<a href="index.html?q=$1">$1</a>') // 不带别名的链接
+                .replace(/^\*\* (.*?)$/gm, '<ul><ul><li>$1</li></ul></ul>') // 嵌套无序列表  
+                .replace(/^\* (.*?)$/gm, '<ul><li>$1</li></ul>') // 无序列表
+                .replace(/^\# (.*?)$/gm, '<ol><li>$1</li></ol>') // 有序列表
+                .replace(/{{Refimprove\|time=.*?}}/g, '') // 移除 Refimprove
+                .replace(/{{Globalize\|time=.*?}}/g, '') // 移除 Globalize
+                .replace(/{{Original research\|time=.*?}}/g, '') // 移除 Original research
+                .replace(/{{Multiple issues\|[\s\S]*?}}/g, '') // 移除 Multiple issues
+                .replace(/{{redirect\|(.*?)}}/g, (match, content) => {
+                    return convertRedirectToHTML(content);
+                }) // 处理 redirect 模板
+                // .replace(/{{sfnp\|(.*?)}}/g, '<span class="reference">[需要引用]</span>') // 简单引用
+                // // .replace(/{{#invoke:Chart\|pie chart.*?}}/gs, '<div class="chart-container"><canvas id="languagePieChart"></canvas></div>') // 图表占位符
+                // .replace(/{{quote\|(.*?)}}/gs, '<blockquote>$1</blockquote>') // 引用块
+                // .replace(/{{Infobox language([\s\S]*?)}}/g, (match, content) => {
+                //     return convertInfoboxToHTML(content);
+                // }) // 处理 Infobox
+                // .replace(/{{[^}]+}}/g, '')
+                ; // 删除或忽略不需要的模板
+
+            // 合并连续的列表项
+            html = html.replace(/<\/ul>\n<ul>/g, '')
+                .replace(/<\/ol>\n<ol>/g, '');
+
+            // 将换行符转换为 <br>，用于段落中的换行
+            html = html.replace(/\n/g, '<br>');
+
+            // 处理段落
+            html = html.split('<br><br>').map(line => `<p>${line}</p>`).join('');
+
+            return html;
+        }
+
+        function convertInfoboxToHTML(content) {
+            const rows = content.split('|').map(row => row.trim()).filter(row => row !== '');
+            let infoboxHTML = '<table class="infobox"><tbody>';
+            rows.forEach(row => {
+                const [key, value] = row.split('=').map(item => item.trim());
+                if (key && value) {
+                    infoboxHTML += `<tr><th>${key}</th><td>${value}</td></tr>`;
+                }
+            });
+            infoboxHTML += '</tbody></table>';
+            return infoboxHTML;
+        }
+
+        function convertRedirectToHTML(content) {
+            const redirects = content.split('|').map(item => item.trim()).filter(item => item !== '');
+            let redirectHTML = '<div class="hatnote navigation-not-searchable">“<b>' + redirects[0] + '</b>”重定向至此。';
+            if (redirects.length > 1) {
+                redirectHTML += '关于'+redirects[1];
+                for (let i = 2; i < redirects.length; i++) {
+                    if (i > 1) {
+                        redirectHTML += '、';
+                    }
+                    redirectHTML += ' <b><a href="index.html?q='+redirects[i]+'">' + redirects[i] + '</a></b>';
+                }
+                redirectHTML += '。';
+            }
+            redirectHTML += '</div>';
+            return redirectHTML;
+        }
+
+
+        document.addEventListener('DOMContentLoaded', renderCharts);
+    </script>
 </body>
+
 </html>
