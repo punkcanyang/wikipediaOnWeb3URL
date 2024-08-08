@@ -94,22 +94,63 @@
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const query = params.get('q');
-        if (query) {
+            if (query) {
+                fetchJsonOrWiki(query);
+            } else {
+                document.getElementById('content').innerHTML = '<p>请在 URL 中提供 ?q= 参数。</p>';
+            }
+        });
+
+        function fetchJsonOrWiki(query) {
             fetch(`${query}.json`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('JSON file not found');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayContent(data);
+                })
+                .catch(() => {
+                    fetchWikiPage(query);
+                });
+        }
+
+        function fetchWikiPage(query) {
+            const wikiApiUrl = `https://zh.wikipedia.org/w/api.php?action=query&prop=revisions&titles=${encodeURIComponent(query)}&rvslots=*&rvprop=content&format=json&origin=*`;
+            fetch(wikiApiUrl)
                 .then(response => response.json())
                 .then(data => {
-                    const content = data.query.pages["243421"].revisions[0].slots.main["*"];
-                    const htmlContent = convertWikiTextToHTML(content);
-                    document.getElementById('content').innerHTML = htmlContent;
+                    saveJsonFile(query, data);
+                    displayContent(data);
                 })
-                .catch(error => console.error('Error loading JSON:', error));
-        } else {
-            document.getElementById('content').innerHTML = '<p>请在 URL 中提供 ?q= 参数。</p>';
+                .catch(error => console.error('Error fetching Wikipedia API:', error));
         }
-    });
+
+        function saveJsonFile(query, data) {
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${query}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function displayContent(data) {
+            const page = Object.values(data.query.pages)[0];
+            const content = page.revisions[0].slots.main['*'];
+            const htmlContent = convertWikiTextToHTML(content);
+            document.getElementById('content').innerHTML = htmlContent;
+        }
 
         function convertWikiTextToHTML(wikiText) {
             // 手动转换 WikiText 为 HTML
+            let references = [];
+            let refIndex = 1;
             let html = wikiText
                 .replace(/'''(.*?)'''/g, '<strong>$1</strong>') // 加粗
                 .replace(/''(.*?)''/g, '<em>$1</em>') // 斜体
@@ -117,7 +158,7 @@
                 .replace(/^===(.*?)===$/gm, '<h3>$1</h3>')  // 三级标题
                 .replace(/^==(.*?)==$/gm, '<h2>$1</h2>')    // 二级标题
                 .replace(/^=(.*?)=$/gm, '<h1>$1</h1>')      // 一级标题
-                .replace(/\[\[(.*?)\|(.*?)\]\]/g, '<a href="index.html?q=$2">$2</a>') // 带别名的链接
+                .replace(/\[\[([^\|\]]+?)\|([^\]]+?)\]\]/g, '<a href="index.html?q=$1 ">$2</a>') // 带别名的链接
                 .replace(/\[\[(.*?)\]\]/g, '<a href="index.html?q=$1">$1</a>') // 不带别名的链接
                 .replace(/^\*\* (.*?)$/gm, '<ul><ul><li>$1</li></ul></ul>') // 嵌套无序列表  
                 .replace(/^\* (.*?)$/gm, '<ul><li>$1</li></ul>') // 无序列表
@@ -129,6 +170,18 @@
                 .replace(/{{redirect\|(.*?)}}/g, (match, content) => {
                     return convertRedirectToHTML(content);
                 }) // 处理 redirect 模板
+                .replace(/{{for\|(.*?)}}/g, (match, content) => {
+                    return convertForTemplateToHTML(content);
+                }) // 处理 for 模板     
+                .replace(/{{noteTA[\s\S]*?}}/g, '') // 移除 noteTA 模板
+                .replace(/{{(cite web|Cite web |cite web |cite news|Cite web|Cite book|Cite book |cite book|Cite journal|Cite journal |cite journal)\|(.*?)}}/g, (match,type, content) => {
+                    const ref = convertCiteToHTML(content);
+                    references.push(ref);
+                    // console.log("content:"+type);
+                    return `<sup id="cite_ref-${refIndex}"><a href="#cite_note-${refIndex}">[${refIndex++}]</a></sup>`;
+                }) // 处理 cite web 模板
+                // .replace(/{{原创研究？\|[\s\S]*?}}/g, '<span class="note">[原创研究？]</span>') // 处理 原创研究？ 模板
+
                 // .replace(/{{sfnp\|(.*?)}}/g, '<span class="reference">[需要引用]</span>') // 简单引用
                 // // .replace(/{{#invoke:Chart\|pie chart.*?}}/gs, '<div class="chart-container"><canvas id="languagePieChart"></canvas></div>') // 图表占位符
                 // .replace(/{{quote\|(.*?)}}/gs, '<blockquote>$1</blockquote>') // 引用块
@@ -147,6 +200,16 @@
 
             // 处理段落
             html = html.split('<br><br>').map(line => `<p>${line}</p>`).join('');
+            // 添加参考文献部分
+
+
+            if (references.length > 0) {
+                html += '<h2>参考文献</h2><ol>';
+                references.forEach((ref, index) => {
+                    html += `<li id="cite_note-${index + 1}">${ref}</li>`;
+                });
+                html += '</ol>';
+            }
 
             return html;
         }
@@ -168,21 +231,80 @@
             const redirects = content.split('|').map(item => item.trim()).filter(item => item !== '');
             let redirectHTML = '<div class="hatnote navigation-not-searchable">“<b>' + redirects[0] + '</b>”重定向至此。';
             if (redirects.length > 1) {
-                redirectHTML += '关于'+redirects[1];
+                redirectHTML += '关于' + redirects[1];
                 for (let i = 2; i < redirects.length; i++) {
                     if (i > 1) {
                         redirectHTML += '、';
                     }
-                    redirectHTML += ' <b><a href="index.html?q='+redirects[i]+'">' + redirects[i] + '</a></b>';
+                    redirectHTML += ' <b><a href="index.html?q=' + redirects[i] + '">' + redirects[i] + '</a></b>';
                 }
                 redirectHTML += '。';
             }
             redirectHTML += '</div>';
             return redirectHTML;
         }
+        function convertForTemplateToHTML(content) {
+            const parts = content.split('|').map(part => part.trim());
+            if (parts.length < 2) return '';
+
+            const description = parts[0];
+            const links = parts.slice(1).map((link, index) => {
+                return `<b><a href="index.html?q=${encodeURIComponent(link)}">${link}</a></b>`;
+            }).join('、');
+
+            return `<div role="note" class="hatnote navigation-not-searchable"><span typeof="mw:File"></span><style data-mw-deduplicate="TemplateStyles:r74069148">body:not(.skin-minerva) .mw-parser-output .ifmobile>.mobile{display:none}body.skin-minerva .mw-parser-output .ifmobile>.nomobile{display:inherit;display:initial}</style><span class="ifmobile"><span class="nomobile">&nbsp;&nbsp;</span><span class="mobile"></span></span>关于${description}，请见${links}。</div>`;
+        }
 
 
-        document.addEventListener('DOMContentLoaded', renderCharts);
+
+        function convertCiteToHTML(content) {
+            const params = content.split('|').map(param => param.trim());
+            let url = '', title = '', website = '', accessdate = '', date = '', archiveurl = '', archivedate = '', deadurl = '';
+
+            params.forEach(param => {
+                const [key, value] = param.split('=').map(item => item.trim());
+                switch (key) {
+                    case 'url':
+                        url = value;
+                        break;
+                    case 'title':
+                        title = value;
+                        break;
+                    case 'website':
+                        website = value;
+                        break;
+                    case 'access-date':
+                        accessdate = value;
+                        break;
+                    case 'date':
+                        date = value;
+                        break;
+                    case 'archive-url':
+                        archiveurl = value;
+                        break;
+                    case 'archive-date':
+                        archivedate = value;
+                        break;
+                    case 'dead-url':
+                        deadurl = value;
+                        break;
+                }
+            });
+
+            let ref = '';
+            if (title) ref += `<a href="${url}">${title}</a>`;
+            if (website) ref += `, <i>${website}</i>`;
+            if (date) ref += `, ${date}`;
+            if (accessdate) ref += `, accessed ${accessdate}`;
+            if (archiveurl) {
+                ref += `, <a href="${archiveurl}">archived</a>`;
+                if (archivedate) ref += ` on ${archivedate}`;
+            }
+            if (deadurl === 'no') ref += ' (original link is active)';
+
+            return ref;
+        }
+
     </script>
 </body>
 

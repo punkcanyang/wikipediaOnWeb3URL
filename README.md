@@ -17,6 +17,8 @@ Build wikipedia on Web3URL
 - 自动排程上传数据到链上
 
 
+
+
 ### TODOs
 
 - TODO：使用 Wikipedia 的 API 获取指定语言版本的页面内容
@@ -30,3 +32,8 @@ Build wikipedia on Web3URL
 - TODO：
 - TODO：
 
+### Done
+
+- 可解析API返回的JSON
+- 解析参考文献
+- 解析歧义 redirect
