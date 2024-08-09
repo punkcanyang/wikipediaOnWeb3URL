@@ -123,7 +123,7 @@
     fetch(wikiApiUrl)
         .then(response => response.json())
         .then(data => {
-            // saveJsonFile(query, data);
+            saveJsonFile(query, data);
             displayContent(data);
 
             // 延迟一秒后检查文件是否存在
@@ -132,7 +132,7 @@
                 fetch(fileUrl, { method: 'HEAD' })
                     .then(fileResponse => {
                         if (!fileResponse.ok) {
-                            // saveJsonFile(query, data);
+                            saveJsonFile(query, data);
                         }
                     })
                     .catch(error => {

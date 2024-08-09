@@ -29,11 +29,16 @@ Build wikipedia on Web3URL
 - TODO：修改页面链接跟图档
 - TODO：Web3URL布署相关合约
 - TODO：自动上传设定档
-- TODO：
-- TODO：
+- TODO：储存合约需要有路由功能，解析request
+- TODO：引用的部分，会标注在词的后面，但是最后整理在页底，需要解决排版
 
 ### Done
 
 - 可解析API返回的JSON
 - 解析参考文献
 - 解析歧义 redirect
+
+
+### Note
+- 合约布署采用Hardhat
+
