@@ -1,13 +1,21 @@
 {
   "name": "hardhat-project",
   "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.6",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "hardhat": "^2.22.8"
+    "@nomicfoundation/hardhat-verify": "^2.0.9",
+    "@types/chai": "^4.3.17",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^22.3.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.3.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
   },
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "deploy": "npx hardhat run deploy.js --network web3qtest"
+    "deploy": "npx hardhat run deploy.ts --network web3qtest"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.2"

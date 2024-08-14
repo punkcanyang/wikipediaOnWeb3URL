@@ -96,6 +96,8 @@
             const query = params.get('q');
             if (query) {
                 fetchJsonOrWiki(query);
+                document.title = `Web3 + ${query}`;
+
             } else {
                 document.getElementById('content').innerHTML = '<p>请在 URL 中提供 ?q= 参数。</p>';
             }

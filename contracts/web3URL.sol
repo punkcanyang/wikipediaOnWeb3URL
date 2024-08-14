@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
+// import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract Manual is Ownable {
+contract manualMode is Ownable {
     constructor() Ownable(msg.sender) {}
 
     function resolveMode() external pure returns (bytes32) {
         return "manual";
     }
+
+
 
     // fallback函数被设计为处理发送到合约地址的数据调用，特别是不匹配任何其他函数签名的调用
     fallback(bytes calldata cdata) external returns (bytes memory) {

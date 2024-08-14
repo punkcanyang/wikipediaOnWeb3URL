@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Request Parameters</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+        .param-container {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Request Parameters</h1>
+    <div id="params"></div>
+
+    <script>
+        function displayParams() {
+            const params = new URLSearchParams(window.location.search);
+            const paramsDiv = document.getElementById('params');
+
+            if (params.toString() === "") {
+                paramsDiv.innerHTML = "<p>No request parameters found.</p>";
+            } else {
+                params.forEach((value, key) => {
+                    const paramDiv = document.createElement('div');
+                    paramDiv.className = 'param-container';
+                    paramDiv.innerHTML = `<strong>${key}</strong>: ${value}`;
+                    paramsDiv.appendChild(paramDiv);
+                });
+            }
+        }
+
+        window.onload = displayParams;
+    </script>
+</body>
+</html>
