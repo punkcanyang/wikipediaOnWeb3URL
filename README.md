@@ -48,3 +48,8 @@ Build wikipedia on Web3URL
 ### Note
 - 合约布署采用Hardhat
 
+### Hardhat 
+
+npx hardhat verify --network mainnet DEPLOYED_CONTRACT_ADDRESS "Constructor argument 1"
+
+

@@ -13,6 +13,10 @@ const {
   Web3Q_GALILEO_TEST_CHAIN_ID,
   HARDHAT_LOCAL_URL,
   HARDHAT_LOCAL_ACCOUNT_PRIVATE_KEYS = "",
+  Sepolia_URL,
+  Sepolia_ACCOUNT_PRIVATE_KEYS="",
+  Sepolia_CHAIN_ID,
+  Sepolia_APIKEY,
 } = process.env;
 
 const config: HardhatUserConfig = {
@@ -31,6 +35,11 @@ const config: HardhatUserConfig = {
       chainId: Number(Web3Q_GALILEO_TEST_CHAIN_ID),
       accounts: Web3Q_ACCOUNT_PRIVATE_KEYS.split(","),
     },
+    Sepolia: {
+      url: Sepolia_URL,
+      chainId: Number(Sepolia_CHAIN_ID),
+      accounts: Sepolia_ACCOUNT_PRIVATE_KEYS.split(","),
+    },
     localhost: {
       url: HARDHAT_LOCAL_URL,
       accounts: HARDHAT_LOCAL_ACCOUNT_PRIVATE_KEYS.split(","),
@@ -38,6 +47,9 @@ const config: HardhatUserConfig = {
   },
   sourcify: {
     enabled: true,
+  },  
+  etherscan: {
+    apiKey: Sepolia_APIKEY
   },
 };
 
