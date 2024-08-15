@@ -15,7 +15,7 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "deploy": "npx hardhat run deploy.ts --network web3qtest"
+    "deploy": "npx hardhat run deploy.ts --network Sepolia"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.2"

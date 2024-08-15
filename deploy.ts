@@ -6,7 +6,7 @@ import hre from "hardhat";
 
 async function main() {
   const MyContract = await hre.ethers.getContractFactory("manualMode");
-  const myContract = await MyContract.deploy(30,false);
+  const myContract = await MyContract.deploy();
 
   // await myContract.deployed();
 

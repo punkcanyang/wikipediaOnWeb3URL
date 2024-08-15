@@ -50,6 +50,6 @@ Build wikipedia on Web3URL
 
 ### Hardhat 
 
-npx hardhat verify --network mainnet DEPLOYED_CONTRACT_ADDRESS "Constructor argument 1"
+npx hardhat verify --network Sepolia DEPLOYED_CONTRACT_ADDRESS "Constructor argument 1"
 
 

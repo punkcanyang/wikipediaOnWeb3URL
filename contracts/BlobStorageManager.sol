@@ -28,7 +28,7 @@ contract BlobStorageManager is Ownable {
     IEthStorageContract public storageContract;
     mapping(bytes32 => mapping(uint256 => bytes32)) internal keyToChunks;
 
-    constructor(uint32 size, address storageAddress) {
+    constructor(uint32 size, address storageAddress) Ownable(msg.sender) {
         maxChunkSize = size;
         storageContract = IEthStorageContract(storageAddress);
     }

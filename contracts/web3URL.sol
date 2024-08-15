@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-import "@openzeppelin/contracts/access/Ownable.sol";
+// import "@openzeppelin/contracts/access/Ownable.sol";
+import "./ERC5018.sol";
 // import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract manualMode is Ownable {
-    constructor() Ownable(msg.sender) {}
+contract manualMode is Ownable,ERC5018 {
+    bytes public defaultFile = "";
+    constructor(uint8 slotLimit, uint32 maxChunkSize, address storageAddress) ERC5018(slotLimit, maxChunkSize, storageAddress) {}
 
     function resolveMode() external pure returns (bytes32) {
         return "manual";
@@ -61,7 +63,13 @@ contract manualMode is Ownable {
                 );
         }
     }
+
+function setDefault(bytes memory _defaultFile) public virtual onlyOwner {
+    defaultFile = _defaultFile;
+}    
 }
+
+
 
 // 工具库：用于字符串和整数转换
 library ToString {
